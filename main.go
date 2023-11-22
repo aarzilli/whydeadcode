@@ -2,32 +2,38 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
 
 var callers = map[string][]string{}
 var reflectMethods = map[string]bool{}
 
 func main() {
+	flag.Usage = func() {
+		out := flag.CommandLine.Output()
+		fmt.Fprintf(out, "Usage of %s:\n", os.Args[0])
+		fmt.Fprintf(out, "\tgo build -ldflags=-dumpdep ... |& whydeadcode\n")
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
 	reflectMethods["reflect.Value.MethodByName"] = true
 	reflectMethods["reflect.Value.Method"] = true
 	seen := map[string]bool{}
 	first := true
+	ul := []string{}
 
 	buf := bufio.NewScanner(os.Stdin)
 bufScanLoop:
 	for buf.Scan() {
 		line := buf.Text()
 		fields := strings.Split(line, " -> ")
-		if len(fields) != 2 {
+		if len(fields) != 2 && !strings.Contains(line, "go:string") {
+			ul = append(ul, line)
 			continue
 		}
 		for i := range fields {
@@ -49,6 +55,13 @@ bufScanLoop:
 
 	for reflectMethod := range reflectMethods {
 		enum([]string{reflectMethod}, seen)
+	}
+	
+	if len(ul) > 1 {
+		fmt.Fprintf(os.Stderr, "Unrecognized input:\n\n")
+		io.WriteString(os.Stderr, strings.Join(ul, "\n"))
+		io.WriteString(os.Stderr, "\n")
+		os.Exit(1)
 	}
 }
 
