@@ -21,8 +21,6 @@ func main() {
 	}
 	flag.Parse()
 
-	reflectMethods["reflect.Value.MethodByName"] = true
-	reflectMethods["reflect.Value.Method"] = true
 	seen := map[string]bool{}
 	first := true
 	ul := []string{}
