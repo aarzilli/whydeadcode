@@ -13,6 +13,7 @@ var callers = map[string][]string{}
 var reflectMethods = map[string]bool{}
 
 func main() {
+	ignoreUnrecognizedInput := flag.Bool("ignore-unrecognized-input", false, "Ignore unrecognized input")
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
 		fmt.Fprintf(out, "Usage of %s:\n", os.Args[0])
@@ -54,8 +55,8 @@ bufScanLoop:
 	for reflectMethod := range reflectMethods {
 		enum([]string{reflectMethod}, seen)
 	}
-	
-	if len(ul) > 1 {
+
+	if !*ignoreUnrecognizedInput && len(ul) > 1 {
 		fmt.Fprintf(os.Stderr, "Unrecognized input:\n\n")
 		io.WriteString(os.Stderr, strings.Join(ul, "\n"))
 		io.WriteString(os.Stderr, "\n")
