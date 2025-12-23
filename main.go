@@ -14,6 +14,7 @@ var reflectMethods = map[string]bool{}
 
 func main() {
 	ignoreUnrecognizedInput := flag.Bool("ignore-unrecognized-input", false, "Ignore unrecognized input")
+	fail := flag.Bool("fail", false, "Fail on non-empty findings")
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
 		fmt.Fprintf(out, "Usage of %s:\n", os.Args[0])
@@ -24,6 +25,7 @@ func main() {
 
 	seen := map[string]bool{}
 	first := true
+	found := false
 	ul := []string{}
 
 	buf := bufio.NewScanner(os.Stdin)
@@ -48,18 +50,22 @@ bufScanLoop:
 		callers[fields[1]] = append(callers[fields[1]], fields[0])
 		if reflectMethods[fields[1]] && first {
 			first = false
-			enum([]string{fields[1]}, seen)
+			found = enum([]string{fields[1]}, seen) || found
 		}
 	}
 
 	for reflectMethod := range reflectMethods {
-		enum([]string{reflectMethod}, seen)
+		found = enum([]string{reflectMethod}, seen) || found
 	}
 
 	if !*ignoreUnrecognizedInput && len(ul) > 1 {
 		fmt.Fprintf(os.Stderr, "Unrecognized input:\n\n")
 		io.WriteString(os.Stderr, strings.Join(ul, "\n"))
 		io.WriteString(os.Stderr, "\n")
+		os.Exit(1)
+	}
+
+	if *fail && found {
 		os.Exit(1)
 	}
 }
