@@ -72,10 +72,6 @@ bufScanLoop:
 
 func enum(path []string, seen map[string]bool) bool {
 	last := path[len(path)-1]
-	if last == "type:reflect.Value" || last == "type:*reflect.rtype" || last == "type:*reflect.Value" {
-		// these are almost always false positives so we skip them
-		return false
-	}
 	seen[last] = true
 	defer func() {
 		if !visitOnce(last) {
