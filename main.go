@@ -49,13 +49,14 @@ bufScanLoop:
 		}
 		callers[fields[1]] = append(callers[fields[1]], fields[0])
 		if reflectMethods[fields[1]] && first {
+			found = enum([]string{fields[1]}, seen, first) || found
 			first = false
-			found = enum([]string{fields[1]}, seen) || found
 		}
 	}
 
 	for reflectMethod := range reflectMethods {
-		found = enum([]string{reflectMethod}, seen) || found
+		found = enum([]string{reflectMethod}, seen, first) || found
+		first = false
 	}
 
 	if !*ignoreUnrecognizedInput && len(ul) > 1 {
@@ -70,8 +71,14 @@ bufScanLoop:
 	}
 }
 
-func enum(path []string, seen map[string]bool) bool {
+func enum(path []string, seen map[string]bool, first bool) bool {
 	last := path[len(path)-1]
+	if !first {
+		if last == "type:reflect.Value" || last == "type:*reflect.rtype" || last == "type:*reflect.Value" {
+			// these are almost always false positives so we skip them
+			return false
+		}
+	}
 	seen[last] = true
 	defer func() {
 		if !visitOnce(last) {
@@ -94,7 +101,7 @@ func enum(path []string, seen map[string]bool) bool {
 		if seen[next] {
 			continue
 		}
-		r2 := enum(append(path, next), seen)
+		r2 := enum(append(path, next), seen, first)
 		r = r || r2
 		if r && visitOnce(last) {
 			return r
