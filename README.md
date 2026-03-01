@@ -2,8 +2,8 @@
 
 Displays why deadcode elimination was partially disabled by the Go linker.
 
-The Go linker will disable most deadcode elimination if it finds reachable calls to `reflect.Value.MethodByName` or `reflect.Value.Method`. This is done because, using these two methods it is possible to dynamically call any public method in the application.
-Whydeadcode uses the call graph produced by the linker to display why `reflect.Value.MethodByName` or `reflect.Value.Method` are reachable. Use it like this:
+The Go linker will disable most deadcode elimination if it finds reachable calls to `reflect.Value.MethodByName` (that don't pass a constant string), `reflect.Value.Method` or `reflect.Value.Methods`. This is done because, using these two methods it is possible to dynamically call any public method in the application.
+Whydeadcode uses the call graph produced by the linker to display why `reflect.Value.MethodByName`, `reflect.Value.Method` or `refect.Value.Methods` (or a function that performs an inlined call to one of those methods) are reachable. Use it like this:
 
 ```
 go build -ldflags=-dumpdep your/package |& whydeadcode
@@ -27,5 +27,5 @@ Usage of whydeadcode:
 
 # TALK
 
-For a more detailed explanation see the [golab 2023 talk](https://youtu.be/EkG177eRcco) or the [slides](https://github.com/aarzilli/talks/blob/master/golab2023_deadcode.pdf).
+For a more detailed explanation see the [golab 2023 talk](https://youtu.be/EkG177eRcco) or the [slides](https://github.com/aarzilli/talks/blob/master/golab2023_deadcode.pdf) (but see the [talk update](talk_update.md).
 
