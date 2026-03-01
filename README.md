@@ -27,5 +27,5 @@ Usage of whydeadcode:
 
 # TALK
 
-For a more detailed explanation see the [golab 2023 talk](https://youtu.be/EkG177eRcco) or the [slides](https://github.com/aarzilli/talks/blob/master/golab2023_deadcode.pdf) (but see the [talk update](talk_update.md).
+For a more detailed explanation see the [golab 2023 talk](https://youtu.be/EkG177eRcco) or the [slides](https://github.com/aarzilli/talks/blob/master/golab2023_deadcode.pdf) (but see the [talk update](talk_update.md)).
 
