@@ -12,11 +12,12 @@ import (
 func TestWhydeadcode(t *testing.T) {
 	for _, c := range []struct {
 		fixtureName string
-		tgt         Path
+		tgt         []string
 	}{
-		{"valuemethod", Path{"main.F", "main.main"}},
-		{"typemethod", Path{"main.F", "main.main"}},
-		{"reachmeth", Path{"github.com/aarzilli/whydeadcode/_fixtures/pkg1.(*Astruct).ReflectMethodByName", "github.com/aarzilli/whydeadcode/_fixtures/pkg1.(*Astruct).ReflectMethodByName·f", "main.f", "main.main"}},
+		{"valuemethod", []string{"main.F", "main.main"}},
+		{"typemethod", []string{"main.F", "main.main"}},
+		{"reachmeth", []string{"github.com/aarzilli/whydeadcode/_fixtures/pkg1.(*Astruct).ReflectMethodByName", "github.com/aarzilli/whydeadcode/_fixtures/pkg1.(*Astruct).ReflectMethodByName·f", "main.f", "main.main"}},
+		{"misleadingfmt", []string{"reflect.(*rtype).Methods.func1", "reflect.(*rtype).Methods", "type:*reflect.rtype cause: main.UseMethods", "fmt.(*pp).printArg", "fmt.(*pp).doPrintln", "fmt.Fprintln", "main.main"}},
 	} {
 		t.Run(c.fixtureName, func(t *testing.T) {
 			paths, _ := Whydeadcode(buildFixture(t, c.fixtureName))
@@ -25,7 +26,7 @@ func TestWhydeadcode(t *testing.T) {
 				t.Error("output path not long enough")
 			}
 			for i := range c.tgt {
-				if c.tgt[i] != paths[0][i] {
+				if c.tgt[i] != paths[0][i].String() {
 					t.Errorf("mismatch at index %d (expected %q got %q)", i, c.tgt[i], paths[0][i])
 					break
 				}
