@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 )
-
-var callers = map[string][]string{}
-var reflectMethods = map[string]bool{}
 
 func main() {
 	ignoreUnrecognizedInput := flag.Bool("ignore-unrecognized-input", false, "Ignore unrecognized input")
@@ -23,18 +21,40 @@ func main() {
 	}
 	flag.Parse()
 
+	paths, ul := Whydeadcode(os.Stdin)
+
+	for _, path := range paths {
+		path.Print()
+	}
+
+	if !*ignoreUnrecognizedInput && len(ul) > 1 {
+		fmt.Fprintf(os.Stderr, "Unrecognized input:\n\n")
+		io.WriteString(os.Stderr, strings.Join(ul, "\n"))
+		io.WriteString(os.Stderr, "\n")
+		os.Exit(1)
+	}
+
+	if *fail && len(paths) > 0 {
+		os.Exit(1)
+	}
+}
+
+type Path []string
+
+// Whydeadcode parses the output of the linker and returns a list of problematic paths.
+func Whydeadcode(linkerOut io.Reader) (pathsToReflectMethods []Path, unrecognizedLines []string) {
 	seen := map[string]bool{}
 	first := true
-	found := false
-	ul := []string{}
+	reflectMethods := map[string]bool{}
+	callers := map[string][]string{}
 
-	buf := bufio.NewScanner(os.Stdin)
+	buf := bufio.NewScanner(linkerOut)
 bufScanLoop:
 	for buf.Scan() {
 		line := buf.Text()
 		fields := strings.Split(line, " -> ")
 		if len(fields) != 2 && !strings.Contains(line, "go:string") {
-			ul = append(ul, line)
+			unrecognizedLines = append(unrecognizedLines, line)
 			continue
 		}
 		for i := range fields {
@@ -49,29 +69,20 @@ bufScanLoop:
 		}
 		callers[fields[1]] = append(callers[fields[1]], fields[0])
 		if reflectMethods[fields[1]] && first {
-			found = enum([]string{fields[1]}, seen, first) || found
+			enum(&pathsToReflectMethods, []string{fields[1]}, seen, first, callers)
 			first = false
 		}
 	}
 
 	for reflectMethod := range reflectMethods {
-		found = enum([]string{reflectMethod}, seen, first) || found
+		enum(&pathsToReflectMethods, []string{reflectMethod}, seen, first, callers)
 		first = false
 	}
 
-	if !*ignoreUnrecognizedInput && len(ul) > 1 {
-		fmt.Fprintf(os.Stderr, "Unrecognized input:\n\n")
-		io.WriteString(os.Stderr, strings.Join(ul, "\n"))
-		io.WriteString(os.Stderr, "\n")
-		os.Exit(1)
-	}
-
-	if *fail && found {
-		os.Exit(1)
-	}
+	return pathsToReflectMethods, unrecognizedLines
 }
 
-func enum(path []string, seen map[string]bool, first bool) bool {
+func enum(pathsToReflectMethods *[]Path, path Path, seen map[string]bool, first bool, callers map[string][]string) bool {
 	last := path[len(path)-1]
 	if !first {
 		if last == "type:reflect.Value" || last == "type:*reflect.rtype" || last == "type:*reflect.Value" {
@@ -89,11 +100,7 @@ func enum(path []string, seen map[string]bool, first bool) bool {
 		if last != "_" {
 			return false
 		}
-		fmt.Println(path[0], "reachable from:")
-		for i := 1; i < len(path); i++ {
-			fmt.Println("\t", path[i])
-		}
-		fmt.Println()
+		*pathsToReflectMethods = append(*pathsToReflectMethods, slices.Clone(path))
 		return true
 	}
 	r := false
@@ -101,7 +108,7 @@ func enum(path []string, seen map[string]bool, first bool) bool {
 		if seen[next] {
 			continue
 		}
-		r2 := enum(append(path, next), seen, first)
+		r2 := enum(pathsToReflectMethods, append(path, next), seen, first, callers)
 		r = r || r2
 		if r && visitOnce(last) {
 			return r
@@ -128,4 +135,12 @@ func visitOnce(sym string) bool {
 		return false
 	}
 	return strings.Index(sym[:slash], ".") >= 0
+}
+
+func (path Path) Print() {
+	fmt.Println(path[0], "reachable from:")
+	for i := 1; i < len(path); i++ {
+		fmt.Println("\t", path[i])
+	}
+	fmt.Println()
 }
