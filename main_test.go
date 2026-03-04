@@ -20,7 +20,7 @@ func TestWhydeadcode(t *testing.T) {
 		{"misleadingfmt", []string{"reflect.(*rtype).Methods.func1", "reflect.(*rtype).Methods", "type:*reflect.rtype cause: main.UseMethods", "fmt.(*pp).printArg", "fmt.(*pp).doPrintln", "fmt.Fprintln", "main.main"}},
 	} {
 		t.Run(c.fixtureName, func(t *testing.T) {
-			paths, _ := Whydeadcode(buildFixture(t, c.fixtureName))
+			paths, _ := Whydeadcode(buildFixture(t, c.fixtureName), "")
 			t.Logf("%q -> %q", c.fixtureName, paths[0])
 			if len(paths[0]) < len(c.tgt) {
 				t.Error("output path not long enough")

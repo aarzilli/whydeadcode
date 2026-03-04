@@ -25,6 +25,8 @@ Usage of ./whydeadcode:
         Fail on non-empty findings
   -ignore-unrecognized-input
         Ignore unrecognized input
+  -s string
+        Instead of printing a path to one of the reflect functions, print a path to the specified symbol
 ```
 
 # TALK

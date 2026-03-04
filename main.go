@@ -14,6 +14,7 @@ func main() {
 	ignoreUnrecognizedInput := flag.Bool("ignore-unrecognized-input", false, "Ignore unrecognized input")
 	fail := flag.Bool("fail", false, "Fail on non-empty findings")
 	all := flag.Bool("a", false, "Show all results")
+	sym := flag.String("s", "", "Instead of printing a path to one of the reflect functions, print a path to the specified symbol")
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
 		fmt.Fprintf(out, "Usage of %s:\n", os.Args[0])
@@ -22,7 +23,7 @@ func main() {
 	}
 	flag.Parse()
 
-	paths, ul := Whydeadcode(os.Stdin)
+	paths, ul := Whydeadcode(os.Stdin, *sym)
 
 	for _, path := range paths {
 		path.Print()
@@ -51,7 +52,7 @@ type callerEdge struct {
 }
 
 // Whydeadcode parses the output of the linker and returns a list of problematic paths.
-func Whydeadcode(linkerOut io.Reader) (pathsToReflectMethods []Path, unrecognizedLines []string) {
+func Whydeadcode(linkerOut io.Reader, sym string) (pathsToReflectMethods []Path, unrecognizedLines []string) {
 	seen := map[string]bool{}
 	first := true
 	reflectMethods := map[string]bool{}
@@ -95,9 +96,16 @@ bufScanLoop:
 			}
 		}
 		callers[fields[1]] = append(callers[fields[1]], callerEdge{fields[0], cause})
-		if reflectMethods[fields[1]] && first {
-			enum(&pathsToReflectMethods, []callerEdge{callerEdge{fields[1], ""}}, seen, first, callers)
-			first = false
+		if sym == "" {
+			if reflectMethods[fields[1]] && first {
+				enum(&pathsToReflectMethods, []callerEdge{callerEdge{fields[1], ""}}, seen, first, callers)
+				first = false
+			}
+		} else {
+			if fields[1] == sym {
+				first = false
+				enum(&pathsToReflectMethods, []callerEdge{callerEdge{fields[1], ""}}, seen, first, callers)
+			}
 		}
 	}
 
