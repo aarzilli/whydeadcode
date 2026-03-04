@@ -34,6 +34,17 @@ func TestWhydeadcode(t *testing.T) {
 	}
 }
 
+// TestStdlibOnlyNoFindings verifies that a binary whose only <ReflectMethod>
+// functions are in the stdlib (e.g. fmt, text/template, reflect iterators
+// added in Go 1.26) produces no whydeadcode findings. These are false positives
+// that users cannot fix.
+func TestStdlibOnlyNoFindings(t *testing.T) {
+	paths, _ := Whydeadcode(buildFixture(t, "stdlibonly"))
+	if len(paths) != 0 {
+		t.Errorf("expected no findings for stdlib-only binary, got %d:\n%v", len(paths), paths)
+	}
+}
+
 func buildFixture(t *testing.T, name string) io.Reader {
 	t.Helper()
 	cmd := exec.Command("go", "build", "-o", "_debug", "-ldflags=-dumpdep", filepath.Join("_fixtures", name)+".go")

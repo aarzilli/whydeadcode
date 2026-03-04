@@ -63,7 +63,14 @@ bufScanLoop:
 			if fields[i] == "" {
 				continue bufScanLoop
 			}
-			if strings.Contains(flags, "<ReflectMethod>") {
+			// Only track <ReflectMethod> from external (non-stdlib) packages.
+			// Stdlib functions like reflect.(*rtype).Methods.func1 or
+			// text/template.(*state).evalField carry <ReflectMethod> due to
+			// internal implementation details that users cannot avoid or fix.
+			// Reporting them produces false positives. External packages (those
+			// with a module path such as "github.com/..." or "k8s.io/...") are
+			// user-controlled and their ReflectMethod usage is actionable.
+			if strings.Contains(flags, "<ReflectMethod>") && isExternalPkg(fields[i]) {
 				reflectMethods[fields[i]] = true
 			}
 		}
@@ -135,6 +142,27 @@ func visitOnce(sym string) bool {
 		return false
 	}
 	return strings.Index(sym[:slash], ".") >= 0
+}
+
+// isExternalPkg reports whether sym belongs to a user-controlled (non-stdlib) package.
+// Stdlib package paths either have no slash with a non-"main" package name
+// (e.g., "reflect.(*rtype).Methods.func1", "fmt.Errorf"), or have a slash but
+// no dot in the first path segment (e.g., "text/template.(*state).evalField").
+// User/external packages are:
+//   - "main.*" — the user's own main package or test fixture
+//   - module paths with a dot before the first slash: "github.com/...", "k8s.io/..."
+func isExternalPkg(sym string) bool {
+	slash := strings.Index(sym, "/")
+	if slash < 0 {
+		// No slash: stdlib (e.g., "reflect", "fmt") or the "main" package.
+		// "main" is always user-controlled code.
+		dot := strings.Index(sym, ".")
+		if dot < 0 {
+			return false
+		}
+		return sym[:dot] == "main"
+	}
+	return strings.Contains(sym[:slash], ".") // dot before first slash = external module
 }
 
 func (path Path) Print() {
