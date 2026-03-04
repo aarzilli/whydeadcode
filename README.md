@@ -11,14 +11,16 @@ go build -ldflags=-dumpdep your/package |& whydeadcode
 
 Needs Go 1.21 or later.
 
-Because of how `-dumpdep` works only the first result output by whydeadcode is real. Because of how `-dumpdep` works anything beyond the first result can be a false positive (i.e. things that look like they will affect deadcode elimination but won't if the first result is taken care of) and it can also have false negatives (i.e. things that will continue to keep deadcode elimination disabled if the first result is taken care of).
+By default whydeadcode will only print the first path to one of those functions it finds: because of how `-dumpdep` works only one path such path can be identified with certainty. 
+The flag `-a` can be specified to print all paths but anything beyond the first result  can be a false positive (i.e. things that look like they will affect deadcode elimination but won't if the first result is taken care of). This output can also have false negatives (i.e. things that will continue to keep deadcode elimination disabled if the first result is taken care of but aren't shown).
 
 # USAGE
 
 ```console
 $ whydeadcode -h
-Usage of whydeadcode:
+Usage of ./whydeadcode:
         go build -ldflags=-dumpdep ... |& whydeadcode
+  -a    Show all results
   -fail
         Fail on non-empty findings
   -ignore-unrecognized-input

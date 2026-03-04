@@ -13,6 +13,7 @@ import (
 func main() {
 	ignoreUnrecognizedInput := flag.Bool("ignore-unrecognized-input", false, "Ignore unrecognized input")
 	fail := flag.Bool("fail", false, "Fail on non-empty findings")
+	all := flag.Bool("a", false, "Show all results")
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
 		fmt.Fprintf(out, "Usage of %s:\n", os.Args[0])
@@ -25,6 +26,9 @@ func main() {
 
 	for _, path := range paths {
 		path.Print()
+		if !*all {
+			break
+		}
 	}
 
 	if !*ignoreUnrecognizedInput && len(ul) > 1 {
